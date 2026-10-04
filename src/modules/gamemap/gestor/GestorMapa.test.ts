@@ -385,12 +385,20 @@ describe('gestor del mapa: al entrar en cada casilla', () => {
     expect([turnoDePersonaje(barbaro(), 1).quedanAcciones, activacionDe(gestor.mapa, 'rojos')?.terminada]).toEqual([false, true])
   })
 
-  it('no pregunta por las casillas de otros personajes, donde no puede quedarse', async () => {
+  it('pregunta también por las casillas ocupadas que atraviesa', async () => {
     const { gestor, p, barbaro } = await conInicial(amplia, true)
     const desde = barbaro().casilla
     // con el elfo, el enano empieza dos casillas a la derecha del bárbaro
     await gestor.moverPersonaje('barbaro', enLinea(desde, 3))
-    expect(p.alEntrar.mock.calls.map(([, donde]) => donde.casilla)).toEqual([aLaDerecha(desde, 1), aLaDerecha(desde, 3)])
+    expect(p.alEntrar.mock.calls.map(([, donde]) => donde.casilla)).toEqual([aLaDerecha(desde, 1), aLaDerecha(desde, 2), aLaDerecha(desde, 3)])
+  })
+
+  it('si se detiene al entrar en una casilla ocupada, se queda antes', async () => {
+    const { gestor, p, barbaro } = await conInicial(amplia, true)
+    const desde = barbaro().casilla
+    p.alEntrar.mockResolvedValueOnce('seguir').mockResolvedValueOnce('detenerse')
+    await gestor.moverPersonaje('barbaro', enLinea(desde, 3))
+    expect(barbaro().casilla).toEqual(aLaDerecha(desde, 1))
   })
 
   it('si lo que pasa al entrar lo quita del mapa, no apunta el movimiento', async () => {
@@ -682,6 +690,17 @@ describe('gestor del mapa: movimiento', () => {
     const { gestor } = await conInicial(amplia)
     await gestor.ejecutarAccion('rojos', 'terminar-turno')
     expect(await gestor.opcionesMovimiento('barbaro')).toBeUndefined()
+  })
+
+  it('muestra el detalle de la escuadra con el personaje seleccionado', async () => {
+    const mostrarDetalle = vi.fn()
+    const p = proveedor(amplia)
+    const clases = await p.listarEscuadras()
+    p.listarEscuadras.mockResolvedValueOnce([{ ...clases[0], mostrarDetalle }, ...clases.slice(1)])
+    const gestor = new GestorMapa(p)
+    await gestor.nuevaEstancia()
+    await gestor.mostrarDetalle('barbaro')
+    expect(mostrarDetalle.mock.lastCall?.[1]).toMatchObject({ id: 'barbaro', nombre: 'Bárbaro' })
   })
 
   it('un personaje del mapa no se coloca a mano: se mueve arrastrándolo', async () => {
@@ -1365,6 +1384,18 @@ describe('gestor del mapa: jugadores', () => {
     await gestor.ejecutarAccion('rojos', 'terminar-turno')
     await gestor.moverPersonajeNoJugador('orco', [hacia(1), hacia(2)], opciones)
     expect(gestor.mapa.personajesNoJugadores?.[0].casilla).toEqual(hacia(2))
+  })
+
+  it('un PNJ movido a mano aplica alEntrar de su clase', async () => {
+    const lava = { ...amplia, terrenos: [{ tipo: 'dificil' as const, efecto: 'lava', posicion: { x: 3, y: 1 }, columnas: 1, filas: 1 }] }
+    const { gestor, barbaro } = await conInicial(lava)
+    const desde = barbaro().casilla ?? { x: 0, y: 0 }
+    const hacia = (dx: number) => ({ x: desde.x + dx, y: desde.y })
+    const alEntrar = vi.fn(async (_personaje: PersonajeEnJuego, _donde: Ubicacion, _mapa: MapaEnJuego): Promise<ResultadoAlEntrar> => 'seguir')
+    gestor.anadirPersonajes('estancia-1', [{ id: 'orco', nombre: 'Orco', jugador: 'oscuridad', casilla: hacia(1) }])
+    await gestor.ejecutarAccion('rojos', 'terminar-turno')
+    await gestor.moverPersonajeNoJugador('orco', [hacia(1), hacia(2)], opciones, { alEntrar })
+    expect(alEntrar.mock.lastCall?.[1].terreno?.efecto).toBe('lava')
   })
 
   it('los PNJ informan su modo inicial de activación', async () => {

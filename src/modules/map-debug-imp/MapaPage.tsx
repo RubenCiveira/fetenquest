@@ -125,8 +125,9 @@ function Gestionado({ id, inicial }: { id: string; inicial: Mapa }) {
   }
 
   async function moverPersonaje(personaje: string, recorrido: Casilla[]) {
+    const noJugador = personajesNoJugadoresDe(mapa).find((p) => p.id === personaje)
     const motivo = esNoJugador(personaje)
-      ? await gestor.moverPersonajeNoJugador(personaje, recorrido, gestor.opcionesMovimientoNoJugador(personaje, (_personaje, gastado) => movimientoDePrueba(gastado)))
+      ? await gestor.moverPersonajeNoJugador(personaje, recorrido, gestor.opcionesMovimientoNoJugador(personaje, (_personaje, gastado) => movimientoDePrueba(gastado)), noJugador && claseDeNoJugador(noJugador))
       : await gestor.moverPersonaje(personaje, recorrido)
     if (motivo) console.warn(`[map-debug] ${personaje} no puede moverse ahora: ${motivo}`)
     setNota(motivo)
@@ -233,6 +234,7 @@ function Gestionado({ id, inicial }: { id: string; inicial: Mapa }) {
         onMover={moverPersonaje}
         onGirar={girar}
         onAtacar={atacar}
+        onMostrarDetalle={(personaje) => void gestor.mostrarDetalle(personaje).then(setNota)}
         motivoParaNoAtacar={(personaje, objetivo) => {
           const noJugador = personajesNoJugadoresDe(mapa).find((p) => p.id === personaje)
           return gestor.motivoParaNoAtacar(personaje, objetivo, noJugador && claseDeNoJugador(noJugador))

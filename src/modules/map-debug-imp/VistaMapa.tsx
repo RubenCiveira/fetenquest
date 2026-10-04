@@ -449,6 +449,8 @@ type Props = {
   onGirar?: (personajeId: string, orientacion: Direccion) => void
   /** Al soltar una ficha arrastrada sobre la de un enemigo suyo: sin esto, no se ataca */
   onAtacar?: (personajeId: string, objetivoId: string) => void
+  /** Al hacer doble click en una ficha de personaje de escuadra */
+  onMostrarDetalle?: (personajeId: string) => void
   /** Por qué un personaje no puede atacar a ese enemigo (se pregunta al arrastrar su ficha por encima), o nada si puede */
   motivoParaNoAtacar?: (personajeId: string, objetivoId: string) => Promise<string | undefined>
   /** Con ataque de escuadra, quiénes de la escuadra del personaje atacarían al enemigo (se pregunta al arrastrar su ficha sobre él): una línea de disparo por cada uno que puede */
@@ -498,6 +500,7 @@ function CapaEstancia({
   onElegir,
   elemento,
   onElegirElemento,
+  onMostrarDetalle,
   corona,
   onArrastrar,
   arrastrando,
@@ -621,6 +624,7 @@ function CapaEstancia({
           <g
             key={personaje.id}
             className={`vista-elemento personaje${personaje.id === elemento ? ' activo' : ''}${esperando ? ' esperando' : ''}`}
+            onDoubleClick={() => onMostrarDetalle?.(personaje.id)}
             {...(onArrastrar && !esperando
               ? { onPointerDown: (ev: PointerEvent) => onArrastrar(ev, personaje) }
               : { onClick: () => elegirBloqueado(personaje) })}
@@ -719,6 +723,7 @@ export function VistaMapa({ mapa, ...props }: Props & { mapa: Mapa }) {
   // ids de las puntas de flecha, únicos aunque haya varios mapas en la página
   const marcador = `flecha${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   const [arrastre, setArrastre] = useState<Arrastre>()
+  const ultimoClick = useRef<{ personaje: string; tiempo: number } | undefined>(undefined)
 
   /** Punto del mapa bajo el puntero, en casillas con decimales */
   const puntoBajo = (ev: PointerEvent): { x: number; y: number } | undefined => {
@@ -782,7 +787,15 @@ export function VistaMapa({ mapa, ...props }: Props & { mapa: Mapa }) {
     if (giro && giro !== (ficha.orientacion ?? ORIENTACION_INICIAL)) return onGirar?.(ficha.id, giro)
     if (fuera) return
     if (recorrido.length > 1) onMover?.(ficha.id, recorrido)
-    else onElegirElemento?.(ficha.id)
+    else {
+      const ahora = Date.now()
+      if (props.elemento === ficha.id && ultimoClick.current?.personaje === ficha.id && ahora - ultimoClick.current.tiempo < 400) {
+        ultimoClick.current = undefined
+        return props.onMostrarDetalle?.(ficha.id)
+      }
+      ultimoClick.current = { personaje: ficha.id, tiempo: ahora }
+      onElegirElemento?.(ficha.id)
+    }
   }
 
   const reglasDelRecorrido = (ficha: Personaje) => ({ medicion, enemigos: casillasDeEnemigos(mapa, ficha.id), distanciaControl, cuerpoACuerpo, costeGiro, costeGiroDiagonal })

@@ -82,7 +82,7 @@ movimientos con las acciones que consumieron.
 | `ClaseDePersonaje` | `motivoParaNoAtacar(ataque, mapa)` | Al pasar su ficha arrastrada por encima de un enemigo y antes de atacar |
 | `ClaseDePersonaje` | `atacar(ataque, mapa)` | Al soltar su ficha arrastrada sobre la de un enemigo, si puede |
 | `ClaseDeEscuadra` | `atacarEscuadra?(ataque, mapa)` | Con `modoAtaque: 'escuadra'`, al soltar la ficha de uno de sus personajes sobre la de un enemigo, si alguno puede atacar |
-| `ClaseDePersonaje` | `alEntrar?(personaje, donde, mapa)` | Al soltar su ficha, por cada casilla del recorrido en que podría quedarse, en orden |
+| `ClaseDePersonaje` | `alEntrar?(personaje, donde, mapa)` | Al soltar su ficha, por cada casilla del recorrido en que entra, en orden |
 | `Comando` | `exec()` | Al elegir una acción que es un comando |
 
 ## ProveedorConfiguracion
@@ -436,6 +436,7 @@ interface ClaseDeEscuadra {
   personajes(): Promise<ClaseDePersonaje[]>
   modoActivacion(): Promise<'agresivo' | 'sigiloso'>
   activar(acciones: AccionEjecutada[]): Promise<ResultadoActivacion>
+  mostrarDetalle?(mapa: MapaEnJuego, personaje?: PersonajeEnJuego): void
   atacarEscuadra?(ataque: AtaqueDeEscuadra, mapa: MapaEnJuego): Promise<ResultadoAccion> // con `modoAtaque: 'escuadra'`
 }
 
@@ -464,6 +465,9 @@ interface ClaseDePersonaje {
   escuadra todas las acciones del turno (`{ accion, personaje? }`). Si responde
   `{ completo: true }`, termina su turno como con «Terminar turno». No se
   llama tras «Terminar turno».
+- `mostrarDetalle(mapa, personaje)`: se llama desde la vista al hacer doble
+  click en una ficha de personaje de la escuadra, pasando el personaje
+  seleccionado para que el proyecto pueda mostrar su ficha o panel de detalle.
 - En la activación de una escuadra pueden actuar todos sus personajes. Si
   tiene más de uno, «Terminar turno» se llama «Terminar turno de escuadra».
 - Un jugador con personajes no jugadores también aparece en `jugadorEnTurno`:
@@ -808,17 +812,18 @@ alEntrar?(personaje: PersonajeEnJuego, donde: Ubicacion, mapa: MapaEnJuego): Pro
 
 Opcional. Al soltar la ficha de un personaje de escuadra, con el recorrido ya
 validado (y confirmado, si desliza) y antes de moverlo, el gestor pregunta a
-su clase por cada casilla del recorrido, en orden: `donde` es la estancia y
-la casilla en ella, con `terreno` si esa casilla tiene un terreno con
-`efecto`. Es el sitio para lo que pasa al pisar una casilla (una trampa, el
-área de influencia de un elemento, un terreno peligroso…), igual que
-`acciones` lo es para lo que se hace a propósito. La clase puede
-delegar en los objetos del proyecto que haya en esa casilla y cambiar el
-mapa (`reducirVida`, `marcarFlag`…).
+su clase por cada casilla del recorrido en que entra, en orden: `donde` es la
+estancia y la casilla en ella, con `terreno` si esa casilla tiene un terreno
+con `efecto`. Es el sitio para lo que pasa al pisar una casilla (una trampa,
+el área de influencia de un elemento, un terreno peligroso…), igual que
+`acciones` lo es para lo que se hace a propósito. La clase puede delegar en
+los objetos del proyecto que haya en esa casilla y cambiar el mapa
+(`reducirVida`, `marcarFlag`…).
 
 - El personaje aún está donde empezó: `personaje` es su estado al empezar.
-- Solo se pregunta por las casillas en que podría quedarse: las de otros
-  personajes, por encima de los que pasa, se saltan.
+- También se pregunta por casillas ocupadas por personajes que pueda atravesar:
+  si ahí responde `detenerse` o `terminar-turno`, se queda en la última casilla
+  libre anterior.
 - `seguir`: pregunta por la siguiente; si todas siguen, se mueve hasta el
   final.
 - `detenerse`: se mueve solo hasta esa casilla y no pregunta por las demás.
@@ -830,8 +835,8 @@ mapa (`reducirVida`, `marcarFlag`…).
   y, si a ninguno de su escuadra le quedan, la de la escuadra.
 - Si mientras tanto deja de estar colocado (la trampa lo mata y se elimina),
   no se mueve ni se apunta nada.
-- No se llama al mover personajes no jugadores (`moverPersonajeNoJugador`) ni
-  al agrupar la escuadra.
+- También se puede aplicar al mover personajes no jugadores si quien llama a
+  `moverPersonajeNoJugador` pasa su clase. No se llama al agrupar la escuadra.
 
 En el banco de pruebas, entrar en lava avisa de que va a hacer daño y tiene un
 50% de probabilidades de parar del todo al personaje (`terminar-turno`, para

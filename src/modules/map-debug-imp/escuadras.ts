@@ -38,6 +38,9 @@ function escuadra(id: string, nombre: string, jugador: string, ids: string[], pu
           .map((h) => new PersonajeDePrueba({ id: h.id, nombre: h.nombre, imagenVtt: urlFichaVtt('heroes', h.id, 'hombre', 'vtt-heroe'), vida: h.cuerpo }, puertas, dialogos, azar)),
       )),
     modoActivacion: async () => 'sigiloso',
+    mostrarDetalle: (_mapa, personaje) => {
+      void dialogos.avisar({ titulo: personaje?.nombre ?? nombre, texto: personaje ? `${personaje.nombre} (${personaje.id})` : nombre })
+    },
     atacarEscuadra: (ataque, mapa) => atacarEscuadraDePrueba(ataque, mapa, dialogos),
     activar: async (acciones) => {
       const resultado = activacionDePrueba(acciones, ids)
@@ -108,6 +111,9 @@ export const escuadrasDePrueba = (
         buscaTrampas: false,
         personajes: async () => (suyos ??= personajes.map((p) => new PersonajeDePrueba(p, puertas, dialogos, azar))),
         modoActivacion: async () => 'sigiloso',
+        mostrarDetalle: (_mapa, personaje) => {
+          void dialogos.avisar({ titulo: personaje?.nombre ?? `Escuadra de monstruos ${i + 1}`, texto: personaje ? `${personaje.nombre} (${personaje.id})` : `Escuadra de monstruos ${i + 1}` })
+        },
         atacarEscuadra: (ataque, mapa) => atacarEscuadraDePrueba(ataque, mapa, dialogos),
         activar: async (acciones) => activacionDePrueba(acciones, personajes.map((p) => p.id)),
       }

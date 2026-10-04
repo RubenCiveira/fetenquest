@@ -3,6 +3,7 @@ import type { ModoAgresivoSigiloso } from './activacion'
 import type { AtaqueDeEscuadra } from './ataque'
 import type { ClaseDePersonaje } from './claseDePersonaje'
 import type { MapaEnJuego } from './mapaEnJuego'
+import type { PersonajeEnJuego } from './personajeEnJuego'
 import type { ResultadoAccion } from './resultadoAccion'
 import type { ResultadoActivacion } from './resultadoActivacion'
 
@@ -22,6 +23,8 @@ export interface ClaseDeEscuadra {
    * turno: si responde `completo`, el gestor termina su turno
    */
   activar(acciones: AccionEjecutada[]): Promise<ResultadoActivacion>
+  /** Muestra el detalle de la escuadra o de uno de sus personajes, si el proyecto lo soporta */
+  mostrarDetalle?(mapa: MapaEnJuego, personaje?: PersonajeEnJuego): void
   /**
    * Con `modoAtaque: 'escuadra'`, resuelve el ataque de sus personajes contra
    * la escuadra objetivo (un `Ataque` por atacante y los `objetivos`, de los

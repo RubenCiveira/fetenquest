@@ -356,6 +356,15 @@ export class GestorMapa implements MapaEnJuego {
     ]
   }
 
+  /** Muestra el detalle de la escuadra del personaje, indicando el personaje seleccionado */
+  async mostrarDetalle(personajeId: string): Promise<string | undefined> {
+    const encontrado = this.#personajeDe(personajeId)
+    if (!encontrado) return `${personajeId} no es de ninguna escuadra`
+    const clase = (await this.#listarEscuadras()).find((e) => e.id === encontrado.escuadra.id)
+    if (!clase?.mostrarDetalle) return `«${encontrado.escuadra.nombre}» no tiene detalle que mostrar`
+    clase.mostrarDetalle(this, this.#enJuego(encontrado.personaje))
+  }
+
   /** Acciones de gestor disponibles para un PNJ: cambiar modo y terminar activación */
   accionesDisponiblesNoJugador(personajeId: string): Accion[] {
     const personaje = this.#mapa.personajesNoJugadores?.find((p) => p.id === personajeId)
@@ -735,13 +744,14 @@ export class GestorMapa implements MapaEnJuego {
   }
 
   /** Mueve manualmente un PNJ del jugador en turno, aplicando las mismas opciones y restricciones de movimiento */
-  async moverPersonajeNoJugador(personajeId: string, recorrido: Casilla[], opciones: OpcionesMovimiento | undefined): Promise<string | undefined> {
+  async moverPersonajeNoJugador(personajeId: string, recorrido: Casilla[], opciones: OpcionesMovimiento | undefined, clase?: Pick<ClaseDePersonaje, 'alEntrar'>): Promise<string | undefined> {
     const personaje = this.#mapa.personajesNoJugadores?.find((p) => p.id === personajeId)
     if (!personaje?.casilla) return `No hay ningún personaje no jugador «${personajeId}» colocado en el mapa`
     const motivo = this.motivoParaNoActuarNoJugador(personajeId)
     if (motivo) return motivo
     if (!opciones) return `${personaje.nombre} no puede moverse ahora`
-    const resultado = await this.#recorrer(personajeId, recorrido, opciones, (m, accion) => this.#apuntarAccionNoJugador(m, personaje, accion))
+    const alEntrar = clase?.alEntrar && ((donde: Ubicacion) => clase.alEntrar?.(this.#enJuego(personaje), donde, this) ?? Promise.resolve<ResultadoAlEntrar>('seguir'))
+    const resultado = await this.#recorrer(personajeId, recorrido, opciones, (m, accion) => this.#apuntarAccionNoJugador(m, personaje, accion), alEntrar)
     if (resultado !== undefined) return resultado || undefined
     await this.#trasMoverse(personajeId, opciones)
   }
@@ -869,10 +879,10 @@ export class GestorMapa implements MapaEnJuego {
     const enCadaPaso = [encaramiento.orientacion, ...(girando ? girosDe(recorrido, encaramiento).orientaciones : recorrido.slice(1).map(() => encaramiento.orientacion))]
     const libre = (c: Casilla, i: number) => !(tamano ? huella(c, tamano, enCadaPaso[i]) : [c]).some((suya) => ocupadas.some(({ x, y }) => x === suya.x && y === suya.y))
     for (const [i, c] of recorrido.entries()) {
-      const donde = i > 0 && libre(c, i) && casillaDelMapa(this.#mapa, c)
+      const donde = i > 0 && casillaDelMapa(this.#mapa, c)
       const terreno = donde ? this.terrenoEn({ estancia: donde.estancia.id, casilla: donde.casilla }) : undefined
       const resultado = donde ? await alEntrar({ estancia: donde.estancia.id, casilla: donde.casilla, ...(terreno?.efecto && { terreno }) }) : 'seguir'
-      if (resultado !== 'seguir') return { hasta: i, resultado }
+      if (resultado !== 'seguir') return { hasta: libre(c, i) ? i : Math.max(0, i - 1), resultado }
     }
     return { hasta: recorrido.length - 1, resultado: 'seguir' }
   }
