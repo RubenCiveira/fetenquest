@@ -198,6 +198,12 @@ describe('vida', () => {
     expect(conVidaReducida(sala({ x: 4, y: 1 }), 'barbaro', 3).escuadras?.[0].personajes[0].vida).toBe(5)
   })
 
+  it('conserva la vida máxima antes de herirlo', () => {
+    expect(orcoDe(conVidaReducida(sala({ x: 4, y: 1 }), 'orco', 2)).vidaMax).toBe(3)
+  })
+})
+
+describe('quitar personajes', () => {
   it('quitar a un personaje no jugador del mapa', () => {
     expect(sinPersonaje(sala({ x: 4, y: 1 }), 'orco').personajesNoJugadores).toEqual([])
   })

@@ -174,7 +174,7 @@ export function medirAtaque(
 
 /** Resta puntos de vida al personaje (de escuadra o no jugador), sin bajar de cero; sin cambios si no lleva la cuenta */
 export function conVidaReducida(m: Mapa, id: string, puntos: number): Mapa {
-  const herido = <P extends Personaje>(p: P): P => (p.vida === undefined ? p : { ...p, vida: Math.max(0, p.vida - puntos) })
+  const herido = <P extends Personaje>(p: P): P => (p.vida === undefined ? p : { ...p, vida: Math.max(0, p.vida - puntos), vidaMax: p.vidaMax ?? p.vida })
   return conPersonajeNoJugador(conPersonaje(m, id, herido), id, herido)
 }
 

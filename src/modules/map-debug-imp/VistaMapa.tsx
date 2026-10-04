@@ -85,6 +85,10 @@ const INICIAL_MODO = { normal: 'N', agresivo: 'A', sigiloso: 'S' }
 
 type PropsFicha = { ficha: Personaje; x: number; y: number; activacion?: Activacion; ultimoModo?: ModoActivacion }
 
+const PUNTOS_POR_FILA = 6
+const RADIO_VIDA = 2.5
+const PASO_VIDA = RADIO_VIDA * 1.8
+
 /** Texto del badge al pasar el puntero */
 function estadoBadge(activacion?: Activacion, ultimoModo?: ModoActivacion) {
   if (activacion) return `${activacion.modo}, ${activacion.terminada ? 'activación completa' : 'activándose'}`
@@ -125,7 +129,7 @@ function IndicadorDeGiro({ ficha, desde, hacia }: { ficha: Personaje; desde: Cas
 }
 
 function FichaEnMapa({ ficha, x, y, activacion, ultimoModo }: PropsFicha) {
-  const { id, nombre, imagenVtt, vida, orientacion = ORIENTACION_INICIAL } = ficha
+  const { id, nombre, imagenVtt, vida, vidaMax = vida, orientacion = ORIENTACION_INICIAL } = ficha
   const modo = activacion?.modo ?? ultimoModo
   const estado = activacion ? (activacion.terminada ? ' terminada' : '') : ' anterior'
   // ocupando varias casillas, un rectángulo redondeado sobre todas las de su huella; si no, un círculo
@@ -167,20 +171,34 @@ function FichaEnMapa({ ficha, x, y, activacion, ultimoModo }: PropsFicha) {
       )}
       {/* encaramiento: un triángulo en el borde hacia el que mira */}
       <MarcaDeEncaramiento x={x} y={y} ancho={ancho} alto={alto} hacia={orientacion} className="vista-encaramiento" />
-      {vida !== undefined && (
-        <g className="vista-vida">
-          <circle cx={x + 5} cy={y + alto - 5} r={6} />
-          <text x={x + 5} y={y + alto - 2}>
-            {vida}
-          </text>
-        </g>
-      )}
       <title>
         {modo ? `${nombre}: ${estadoBadge(activacion, ultimoModo)}` : nombre}
-        {vida !== undefined && ` (${vida} de vida)`}
+        {vida !== undefined && ` (${vida} de ${vidaMax} de vida)`}
         {`, mira hacia ${orientacion}`}
       </title>
     </>
+  )
+}
+
+function IndicadorVida({ ficha, x, y }: { ficha: Personaje; x: number; y: number }) {
+  const { vida, vidaMax = vida } = ficha
+  if (vida === undefined || vidaMax === undefined || vidaMax <= 0) return null
+
+  const { columnas } = dimensionesDe(ficha)
+  const cx = x + (columnas * LADO) / 2
+  const columnasVida = vidaMax > PUNTOS_POR_FILA ? Math.ceil(Math.sqrt(vidaMax)) : vidaMax
+  const filasVida = Math.ceil(vidaMax / columnasVida)
+  const inicioVidaX = cx - ((columnasVida - 1) * PASO_VIDA) / 2
+  const inicioVidaY = y - 5 - (filasVida - 1) * PASO_VIDA
+
+  return (
+    <g className="vista-vida">
+      {Array.from({ length: vidaMax }, (_, i) => {
+        const columna = i % columnasVida
+        const fila = Math.floor(i / columnasVida)
+        return <circle key={i} className={i < vida ? 'sana' : 'herida'} cx={inicioVidaX + columna * PASO_VIDA} cy={inicioVidaY + fila * PASO_VIDA} r={RADIO_VIDA} />
+      })}
+    </g>
   )
 }
 
@@ -657,6 +675,14 @@ function CapaEstancia({
           </g>
         )
       })}
+      <g className="vista-vidas">
+        {personajes.map(({ personaje }) => (
+          <IndicadorVida key={personaje.id} ficha={personaje} x={personaje.casilla.x * LADO} y={personaje.casilla.y * LADO} />
+        ))}
+        {noJugadores.map((p) => (
+          <IndicadorVida key={p.id} ficha={p} x={p.casilla.x * LADO} y={p.casilla.y * LADO} />
+        ))}
+      </g>
       {estanciasDe(estancia).flatMap(({ estancia: e, origen }) =>
         e.puertas.map((p) => <PuertaEnMuro key={`${e.id}-${p.id}`} puerta={p} origen={origen} />),
       )}

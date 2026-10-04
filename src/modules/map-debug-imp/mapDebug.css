@@ -164,7 +164,6 @@
   text-anchor: middle;
 }
 
-/* puntos de vida que le quedan */
 .vista-encaramiento {
   fill: var(--tinta);
   stroke: var(--vitela);
@@ -189,16 +188,20 @@
   stroke-width: 1;
 }
 
-.vista-vida circle {
-  fill: var(--rubrica);
+.vista-vidas {
+  pointer-events: none;
 }
 
-.vista-vida text {
-  font-family: var(--versalitas);
-  font-size: 8px;
-  font-weight: 700;
-  text-anchor: middle;
-  fill: var(--vitela);
+.vista-vida circle {
+  stroke: none;
+}
+
+.vista-vida .sana {
+  fill: #238b45;
+}
+
+.vista-vida .herida {
+  fill: #b42318;
 }
 
 /* guía de la coherencia de las escuadras: azul lo que está a la distancia, rojo lo que no; el círculo del centro y un aro en los que quedan fuera */

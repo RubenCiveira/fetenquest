@@ -107,8 +107,8 @@ const descontada = (opcion: OpcionMovimiento, casillas: number): OpcionMovimient
  *   moverse no apunta ninguna acción), todo eso menos lo que le costó girar:
  *   encararse es parte del movimiento;
  * - si ya se ha movido, lo que le quede de mover más deslizar 3 y, si solo se
- *   ha movido de forma normal (`mover`), también cargar con lo que le quede
- *   de la carga; tras posicionarse, destrabarse o cargar, ya no carga;
+ *   ha movido de forma normal (`mover`) o una carga parcial, también cargar
+ *   con lo que le quede de la carga; tras posicionarse o destrabarse, ya no carga;
  * - si ya ha deslizado, no puede moverse más
  */
 export function movimientoDePrueba({ casillas, acciones }: MovimientoGastado): OpcionesMovimiento | undefined {
@@ -116,10 +116,11 @@ export function movimientoDePrueba({ casillas, acciones }: MovimientoGastado): O
   if (!acciones.length) return casillas ? { base: descontada(MOVIMIENTO_DE_PRUEBA.base, casillas), variaciones: MOVIMIENTO_DE_PRUEBA.variaciones.map((v) => descontada(v, casillas)) } : MOVIMIENTO_DE_PRUEBA
   const quedan = Math.max(0, MOVIMIENTO - casillas)
   const [cargar, deslizar] = MOVIMIENTO_DE_PRUEBA.variaciones
-  const soloNormal = acciones.every((a) => a === MOVER.id)
+  const quedaCarga = descontada(cargar, casillas)
+  const puedeSeguirCargando = acciones.every((a) => a === MOVER.id || a === cargar.accion.id) && quedaCarga.tramos[0].distancia > 0
   return {
     base: { ...MOVIMIENTO_DE_PRUEBA.base, tramos: [{ distancia: quedan }] },
-    variaciones: [...(soloNormal ? [descontada(cargar, casillas)] : []), { ...deslizar, tramos: [{ distancia: quedan }, { distancia: 3, accion: DESLIZAR }] }],
+    variaciones: [...(puedeSeguirCargando ? [quedaCarga] : []), { ...deslizar, tramos: [{ distancia: quedan }, { distancia: 3, accion: DESLIZAR }] }],
   }
 }
 

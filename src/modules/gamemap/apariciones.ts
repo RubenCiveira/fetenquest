@@ -56,7 +56,7 @@ export function anadirPersonajesNoJugadores(
       if (todosLosPersonajes(mapa).some((p) => p.id === id)) throw new Error(`Ya hay un personaje «${id}» en el mapa`)
       const tamano = { ...(largo && largo > 1 && { largo }), ...(ancho && ancho > 1 && { ancho }) }
       const casilla = sitioParaPersonaje(mapa, estancia, aparicion, azar, tamano)
-      const nuevo: PersonajeNoJugador = { id, nombre, ...(imagenVtt && { imagenVtt }), estancia: estanciaId, ...(casilla && { casilla }), ...(vida !== undefined && { vida }), ...tamano, turnos: [], jugador }
+      const nuevo: PersonajeNoJugador = { id, nombre, ...(imagenVtt && { imagenVtt }), estancia: estanciaId, ...(casilla && { casilla }), ...(vida !== undefined && { vida, vidaMax: vida }), ...tamano, turnos: [], jugador }
       return { mapa: { ...mapa, personajesNoJugadores: [...(mapa.personajesNoJugadores ?? []), nuevo] }, anadidos: [...anadidos, nuevo] }
     },
     { mapa: m, anadidos: [] },

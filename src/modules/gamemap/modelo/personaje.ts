@@ -22,6 +22,8 @@ export type Personaje = {
   estancia: string
   casilla?: Casilla
   vida?: number
+  /** Puntos de vida con los que empezó; si no está, se usa `vida` como máximo */
+  vidaMax?: number
   turnos: TurnoDePersonaje[]
   /** Marcas de estado del personaje que cambian durante la partida (aturdido…) */
   flags?: string[]

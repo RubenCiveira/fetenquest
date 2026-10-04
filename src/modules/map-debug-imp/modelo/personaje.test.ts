@@ -55,7 +55,18 @@ describe('personaje de prueba', () => {
     expect(movimientoDePrueba({ casillas: 6, acciones: ['mover'] })?.variaciones.map((v) => v.tramos.map((t) => t.distancia))).toEqual([[2], [0, 3]])
   })
 
-  it.each(['posicionarse', 'destrabarse', 'cargar'])('tras %s, ya no carga', (accion) => {
+  it('tras una carga parcial, puede seguir cargando con lo que le queda', () => {
+    expect(movimientoDePrueba({ casillas: 2, acciones: ['cargar'] })?.variaciones.map((v) => [v.id, v.tramos.map((t) => t.distancia)])).toEqual([
+      ['cargar', [6]],
+      ['mover-y-deslizar', [4, 3]],
+    ])
+  })
+
+  it('tras agotar la carga, ya no carga', () => {
+    expect(movimientoDePrueba({ casillas: 8, acciones: ['cargar'] })?.variaciones.map((v) => v.id)).toEqual(['mover-y-deslizar'])
+  })
+
+  it.each(['posicionarse', 'destrabarse'])('tras %s, ya no carga', (accion) => {
     expect(movimientoDePrueba({ casillas: 2, acciones: [accion] })?.variaciones.map((v) => v.id)).toEqual(['mover-y-deslizar'])
   })
 

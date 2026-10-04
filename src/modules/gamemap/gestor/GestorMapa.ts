@@ -165,7 +165,7 @@ export class GestorMapa implements MapaEnJuego {
         const personaje = huecoDePersonaje({ id, nombre, ...tamano })
         const casilla = this.#sitioInicial({ ...estancia, elementos: [...estancia.elementos, ...ocupados] }, personaje, alianza, ocupados)
         if (casilla) ocupados.push({ ...personaje, posicion: casilla, alianza })
-        personajes.push({ id, nombre, ...(imagenVtt && { imagenVtt }), estancia: estancia.id, ...(casilla && { casilla }), ...(vida !== undefined && { vida }), ...tamano, turnos: [] })
+        personajes.push({ id, nombre, ...(imagenVtt && { imagenVtt }), estancia: estancia.id, ...(casilla && { casilla }), ...(vida !== undefined && { vida, vidaMax: vida }), ...tamano, turnos: [] })
       }
       const modo = this.configuracion.modosActivacion === 'agresivo-sigiloso' ? await clase.modoActivacion() : undefined
       escuadras.push({ id: clase.id, nombre: clase.nombre, jugador: clase.jugador, personajes, ...(modo && { modo }), turnos: [] })
